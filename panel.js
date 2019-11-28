@@ -62,7 +62,7 @@ let siteIndex = 0;
 let siteURL = "";
 
 function validURL(str) {
-    var pattern = new RegExp('^(https?:\\/\\/)?' + // protocol
+    const pattern = new RegExp('^(https?:\\/\\/)?' + // protocol
         '((([a-z\\d]([a-z\\d-]*[a-z\\d])*)\\.)+[a-z]{2,}|' + // domain name
         '((\\d{1,3}\\.){3}\\d{1,3}))' + // OR ip (v4) address
         '(\\:\\d+)?(\\/[-a-z\\d%_.~+]*)*' + // port and path
@@ -80,13 +80,11 @@ function getDomain(url) {
 }
 
 function setSmallest(domain, url, size) {
-    if (size !== 0 && validURL(url)) {
+    if (size !== 0 && validURL(url))
         smallestObjects[domain] = {
             url: url,
             size: size,
         };
-        // log(`***${url}`)
-    }
 }
 
 function getHeader(headers, name) {
@@ -122,21 +120,14 @@ function LoadSite(tabID) {
     if (siteIndex < sites.length) {
         siteURL = sites[siteIndex];
         log(`Scraping ${siteIndex + 1}/${sites.length}: ${siteURL}`);
-        // log(`Loaded ${sites.length} sites:`);
-        // log('sites: ' + JSON.stringify(sites));
         chrome.tabs.update(tabID, {url: 'https://' + siteURL});
     }
 }
 
 function report() {
     log(`Smallest Objects: `);
-    for (let domain in smallestObjects) {
+    for (let domain in smallestObjects)
         log(`${domain},${smallestObjects[domain].size},${smallestObjects[domain].url}`)
-    }
-}
-
-function sleep(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 document.querySelector('#report').addEventListener('click', () => report(), false);
@@ -151,14 +142,8 @@ document.querySelector('#executescript').addEventListener('click', () => {
 
         chrome.devtools.network.onRequestFinished.addListener(request => processObject(request));
         chrome.tabs.onUpdated.addListener(function (loadedTabID, info) {
-            // log(`Loaded Tab: ${loadedTabID}, Tracking tab: ${tabID}`);
             if (info.status === 'complete') {
                 if (!smallestObjects.hasOwnProperty(sites[siteIndex])) log("***Warning! No object for " + sites[siteIndex]);
-                // log('done!');
-                // sleep(5000).then(() => {
-                //
-                // });
-                // log("Moving on!");
                 siteIndex++;
                 LoadSite(tabID);
             }
@@ -167,35 +152,3 @@ document.querySelector('#executescript').addEventListener('click', () => {
         LoadSite();
     })
 }, false);
-
-// let chosenFileEntry = null;
-//
-// chooseFileButton.addEventListener('click', function(e) {
-//     chrome.fileSystem.chooseEntry({type: 'openFile'}, function(readOnlyEntry) {
-//         readOnlyEntry.file(function(file) {
-//             let reader = new FileReader();
-//
-//             reader.onerror = errorHandler;
-//             reader.onloadend = function(e) {
-//                 log(e.target.result);
-//             };
-//             reader.readAsText(file);
-//         });
-//     });
-// });
-//
-//
-// function writeToFile(){
-//     chrome.fileSystem.getWritableEntry(chosenFileEntry, function(writableFileEntry) {
-//         writableFileEntry.createWriter(function(writer) {
-//             writer.onerror = errorHandler;
-//             writer.onwriteend = callback;
-//
-//             chosenFileEntry.file(function(file) {
-//                 writer.write(file);
-//             });
-//         }, errorHandler);
-//     });
-// }
-
-

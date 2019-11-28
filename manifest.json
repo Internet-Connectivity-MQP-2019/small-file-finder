@@ -2,7 +2,7 @@
   "name": "Scraper",
   "version": "1.0",
   "description": "Find small files",
-  "permissions": ["storage", "tabs"],
+  "permissions": ["storage", "tabs", "activeTab"],
   "background": {
     "scripts": ["background.js"],
     "persistent": false

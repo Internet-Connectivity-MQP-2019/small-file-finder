@@ -47,9 +47,11 @@ const domains = [
 ];
 
 
-function log(message) {
-    document.querySelector('#output').innerHTML += `${message}\n`;
+function log(message, end = '\n') {
+    // if(end === null) end = '\n';
+    document.querySelector('#output').innerHTML += `${message}${end}`;
 }
+
 
 function reset() {
     document.querySelector('#output').innerHTML = ``;
@@ -71,6 +73,15 @@ function validURL(str) {
     return !!pattern.test(str);
 }
 
+function isImage(str){
+    return str.endsWith('.jpg')
+        || str.endsWith('.jpeg')
+        || str.endsWith('.svg')
+        || str.endsWith('.png')
+        || str.endsWith('.ico')
+        || str.endsWith('.gif');
+}
+
 function getDomain(url) {
     let str = url;
     str = str.replace('https://', '');
@@ -88,29 +99,41 @@ function setSmallest(domain, url, size) {
 }
 
 function getHeader(headers, name) {
+    // log(`Looking for header ${name}:`);
     let value = "";
     headers.forEach(function (header) {
-        if (header.name.toLowerCase() === name.toLowerCase()) value = header.value;
+        // if(value === "") log(`${header.name}`, '...');
+        if (header.name.toLowerCase() === name.toLowerCase()) {
+            // if(value === "") log('YES: ' + value);
+            value = header.value;
+        }
+        // else if(value === "") log('NO')
     });
+    // if(value === "") log(JSON.stringify(headers));
     return value;
 }
 
-let debug = true;
+let debug = false;
 
 function processObject(request) {
     let size = request.response.content.size;
     let url = request.request.url;
-    let headers = request.request.headers;
-    let domain = getDomain(getHeader(headers, 'referer'));
-    if (domain === '') domain = getDomain(getHeader(headers, 'authority'));
-    if (domain === '') domain = getDomain(getHeader(headers, 'origin'));
-    if (domain === '' && debug) log(JSON.stringify(headers));
+    let reqHeaders = request.request.headers;
+    let respHeaders = request.response.headers;
+    let domain = getDomain(getHeader(reqHeaders, 'referer'));
+    if (domain === '') domain = getDomain(getHeader(reqHeaders, 'authority'));
+    if (domain === '') domain = getDomain(getHeader(reqHeaders, 'origin'));
+    if (domain === '' && debug) log(JSON.stringify(reqHeaders));
     let exists = smallestObjects.hasOwnProperty(domain);
+    let type = getHeader(respHeaders, 'content-type');
+    // if (type === '' && debug) log(JSON.stringify(headers));
     if (sites.includes(domain)) {
         if (debug) log(domain + ': ' + url.substring(0, 50));
-        if (validURL(url)) {
-            if ((exists && size < smallestObjects[domain].size) || !exists)
+        if (validURL(url) && type.includes('image')) {
+            if ((exists && size < smallestObjects[domain].size) || !exists) {
                 setSmallest(domain, url, size)
+                // log(`${type}: ${url}`);
+            }
         }
     } else if (debug) log(`BAD DOMAIN: ` + domain)
 }
@@ -128,6 +151,9 @@ function report() {
     log(`Smallest Objects: `);
     for (let domain in smallestObjects)
         log(`${domain},${smallestObjects[domain].size},${smallestObjects[domain].url}`)
+    // if (!smallestObjects.hasOwnProperty(sites[siteIndex])) log("***Warning! No object for " + sites[siteIndex]);
+
+
 }
 
 document.querySelector('#report').addEventListener('click', () => report(), false);
@@ -143,7 +169,6 @@ document.querySelector('#executescript').addEventListener('click', () => {
         chrome.devtools.network.onRequestFinished.addListener(request => processObject(request));
         chrome.tabs.onUpdated.addListener(function (loadedTabID, info) {
             if (info.status === 'complete') {
-                if (!smallestObjects.hasOwnProperty(sites[siteIndex])) log("***Warning! No object for " + sites[siteIndex]);
                 siteIndex++;
                 LoadSite(tabID);
             }
